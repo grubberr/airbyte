@@ -219,7 +219,9 @@ public class SchedulerApp {
         configs.getWorkspaceRetentionConfig(),
         workspaceRoot,
         jobPersistence);
-    AirbyteVersion.assertIsCompatible(configs.getAirbyteVersion(), jobPersistence.getVersion().get());
+    AirbyteVersion.assertIsCompatible(
+        new AirbyteVersion(configs.getAirbyteVersion()),
+        jobPersistence.getVersion().map(AirbyteVersion::new).orElse(null));
 
     TrackingClientSingleton.initialize(
         configs.getTrackingStrategy(),

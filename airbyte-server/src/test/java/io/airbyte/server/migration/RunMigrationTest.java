@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 
 import com.google.common.io.Resources;
 import io.airbyte.commons.io.Archives;
+import io.airbyte.commons.version.AirbyteVersion;
 import io.airbyte.config.DestinationConnection;
 import io.airbyte.config.OperatorNormalization.Option;
 import io.airbyte.config.SourceConnection;
@@ -299,7 +300,7 @@ public class RunMigrationTest {
         jobPersistence,
         new ConfigRepository(FileSystemConfigPersistence.createWithValidation(configRoot), new NoOpSecretsHydrator(), Optional.of(secretPersistence),
             Optional.of(secretPersistence)),
-        TARGET_VERSION,
+        new AirbyteVersion(TARGET_VERSION),
         YamlSeedConfigPersistence.getDefault(),
         mock(SpecFetcher.class) // this test was disabled/broken when this fetcher mock was added. apologies if you have to fix this
                                 // in the future.
