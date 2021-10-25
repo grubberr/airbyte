@@ -578,3 +578,9 @@
   dockerImageTag: 0.1.0
   documentationUrl: https://docs.airbyte.io/integrations/sources/lever-onesignal
   sourceType: api
+- sourceDefinitionId: afa734e4-3571-11ec-991a-1e0031268139
+  name: YouTube Analytics
+  dockerRepository: airbyte/source-youtube-analytics
+  dockerImageTag: dev
+  documentationUrl: https://docs.airbyte.io/integrations/sources/source-youtube-analytics
+  sourceType: api
