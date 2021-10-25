@@ -18,9 +18,12 @@ import io.airbyte.workers.process.WorkerHeartbeatServer;
 import io.airbyte.workers.temporal.CheckConnectionWorkflow;
 import io.airbyte.workers.temporal.DiscoverCatalogWorkflow;
 import io.airbyte.workers.temporal.SpecWorkflow;
-import io.airbyte.workers.temporal.SyncWorkflow;
 import io.airbyte.workers.temporal.TemporalJobType;
 import io.airbyte.workers.temporal.TemporalUtils;
+import io.airbyte.workers.temporal.sync.DbtTransformationActivityImpl;
+import io.airbyte.workers.temporal.sync.NormalizationActivityImpl;
+import io.airbyte.workers.temporal.sync.ReplicationActivityImpl;
+import io.airbyte.workers.temporal.sync.SyncWorkflowImpl;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.kubernetes.client.openapi.ApiClient;
@@ -98,11 +101,11 @@ public class WorkerApp {
         .registerActivitiesImplementations(new DiscoverCatalogWorkflow.DiscoverCatalogActivityImpl(processFactory, secretsHydrator, workspaceRoot));
 
     final Worker syncWorker = factory.newWorker(TemporalJobType.SYNC.name(), getWorkerOptions(maxWorkers.getMaxSyncWorkers()));
-    syncWorker.registerWorkflowImplementationTypes(SyncWorkflow.WorkflowImpl.class);
+    syncWorker.registerWorkflowImplementationTypes(SyncWorkflowImpl.class);
     syncWorker.registerActivitiesImplementations(
-        new SyncWorkflow.ReplicationActivityImpl(processFactory, secretsHydrator, workspaceRoot),
-        new SyncWorkflow.NormalizationActivityImpl(processFactory, secretsHydrator, workspaceRoot, workerEnvironment, airbyteVersion),
-        new SyncWorkflow.DbtTransformationActivityImpl(processFactory, secretsHydrator, workspaceRoot, airbyteVersion));
+        new ReplicationActivityImpl(processFactory, secretsHydrator, workspaceRoot),
+        new NormalizationActivityImpl(processFactory, secretsHydrator, workspaceRoot, workerEnvironment, airbyteVersion),
+        new DbtTransformationActivityImpl(processFactory, secretsHydrator, workspaceRoot, airbyteVersion));
     factory.start();
   }
 
