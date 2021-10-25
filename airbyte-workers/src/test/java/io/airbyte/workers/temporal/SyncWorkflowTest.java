@@ -107,7 +107,7 @@ class SyncWorkflowTest {
   private StandardSyncOutput execute() {
     worker.registerActivitiesImplementations(replicationActivity, normalizationActivity, dbtTransformationActivity);
     testEnv.start();
-    final SyncWorkflow workflow = client.newWorkflowStub(SyncWorkflowImpl.class, WorkflowOptions.newBuilder().setTaskQueue(TASK_QUEUE).build());
+    final SyncWorkflow workflow = client.newWorkflowStub(SyncWorkflow.class, WorkflowOptions.newBuilder().setTaskQueue(TASK_QUEUE).build());
 
     return workflow.run(JOB_RUN_CONFIG, SOURCE_LAUNCHER_CONFIG, DESTINATION_LAUNCHER_CONFIG, syncInput);
   }
