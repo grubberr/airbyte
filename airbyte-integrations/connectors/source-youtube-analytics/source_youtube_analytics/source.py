@@ -90,7 +90,7 @@ class YoutubeAnalyticsStream(HttpStream, ABC):
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
-        for report in response_json['reports']:
+        for report in response_json.get('reports', []):
             downloadUrl = report['downloadUrl']
             response = self._session.get(downloadUrl)
             response.raise_for_status()
@@ -110,9 +110,23 @@ class ChannelReport(YoutubeAnalyticsStream):
         self.job_id = job_id
         return super().__init__(authenticator)
 
+    def create_job(self, name):
+        request_json = {
+            'name': 'Airbyte reporting job',
+            'reportTypeId': name,
+        }
+        url = urljoin(self.url_base, 'jobs')
+        response = self._session.post(url, json=request_json)
+        response.raise_for_status()
+        response_json = response.json()
+        return response_json['id']
+
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
     ) -> str:
+        if not self.job_id:
+            self.job_id = self.create_job(self.name)
+            self.logger.info(f"YouTube reporting job is created: '{self.job_id}'")
         return 'jobs/{}/reports'.format(self.job_id)
 
 
@@ -207,7 +221,7 @@ class SourceYoutubeAnalytics(AbstractSource):
         url = urljoin(YoutubeAnalyticsStream.url_base, 'jobs')
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        return response.json()['jobs']
+        return response.json().get('jobs', {})
 
     def check_connection(self, logger, config) -> Tuple[bool, any]:
         authenticator = self.get_authenticator(config)
