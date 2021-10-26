@@ -39,7 +39,7 @@
       "type": "integer"
     },
     "red_watch_time_minutes": {
-      "type": "integer"
+      "type": "number"
     }
   }
 }
