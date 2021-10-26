@@ -42,7 +42,7 @@
       "type": "number"
     },
     "average_view_duration_seconds": {
-      "type": "integer"
+      "type": "number"
     },
     "playlist_starts": {
       "type": "integer"

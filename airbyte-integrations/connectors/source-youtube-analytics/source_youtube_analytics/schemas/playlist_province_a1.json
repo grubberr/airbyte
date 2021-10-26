@@ -33,7 +33,7 @@
       "type": "number"
     },
     "average_view_duration_seconds": {
-      "type": "string"
+      "type": "number"
     },
     "playlist_starts": {
       "type": "string"
