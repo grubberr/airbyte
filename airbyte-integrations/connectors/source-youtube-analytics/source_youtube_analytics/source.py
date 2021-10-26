@@ -16,6 +16,7 @@ from airbyte_cdk.sources import AbstractSource
 from airbyte_cdk.sources.streams import Stream
 from airbyte_cdk.sources.streams.http import HttpStream
 from airbyte_cdk.sources.streams.http.requests_native_auth import Oauth2Authenticator
+from airbyte_cdk.sources.utils.transform import TransformConfig, TypeTransformer
 
 """
 TODO: Most comments in this class are instructive and should be deleted after the source is implemented.
@@ -61,6 +62,7 @@ class YoutubeAnalyticsStream(HttpStream, ABC):
     """
 
     url_base = "https://youtubereporting.googleapis.com/v1/"
+    transformer = TypeTransformer(TransformConfig.DefaultSchemaNormalization)
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         """
@@ -201,7 +203,6 @@ class Employees(IncrementalYoutubeAnalyticsStream):
 
 
 class SourceYoutubeAnalytics(AbstractSource):
-
     @staticmethod
     def get_authenticator(config):
         client_id = config["client_id"]
