@@ -39,7 +39,7 @@
       "type": "integer"
     },
     "watch_time_minutes": {
-      "type": "integer"
+      "type": "number"
     },
     "average_view_duration_seconds": {
       "type": "integer"

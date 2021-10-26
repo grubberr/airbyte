@@ -30,7 +30,7 @@
       "type": "string"
     },
     "watch_time_minutes": {
-      "type": "string"
+      "type": "number"
     },
     "average_view_duration_seconds": {
       "type": "string"
