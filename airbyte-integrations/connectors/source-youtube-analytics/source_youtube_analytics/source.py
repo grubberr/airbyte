@@ -3,13 +3,13 @@
 #
 
 
-import io
 import csv
+import io
 import json
 import pkgutil
 from abc import ABC
-from urllib.parse import urljoin
 from typing import Any, Iterable, List, Mapping, MutableMapping, Optional, Tuple
+from urllib.parse import urljoin
 
 import requests
 from airbyte_cdk.sources import AbstractSource
@@ -60,7 +60,7 @@ class YoutubeAnalyticsStream(HttpStream, ABC):
     See the reference docs for the full list of configurable options.
     """
 
-    url_base = 'https://youtubereporting.googleapis.com/v1/'
+    url_base = "https://youtubereporting.googleapis.com/v1/"
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         """
@@ -90,8 +90,8 @@ class YoutubeAnalyticsStream(HttpStream, ABC):
 
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         response_json = response.json()
-        for report in response_json.get('reports', []):
-            downloadUrl = report['downloadUrl']
+        for report in response_json.get("reports", []):
+            downloadUrl = report["downloadUrl"]
             response = self._session.get(downloadUrl)
             response.raise_for_status()
             fp = io.StringIO(response.text)
@@ -112,14 +112,14 @@ class ChannelReport(YoutubeAnalyticsStream):
 
     def create_job(self, name):
         request_json = {
-            'name': 'Airbyte reporting job',
-            'reportTypeId': name,
+            "name": "Airbyte reporting job",
+            "reportTypeId": name,
         }
-        url = urljoin(self.url_base, 'jobs')
+        url = urljoin(self.url_base, "jobs")
         response = self._session.post(url, json=request_json)
         response.raise_for_status()
         response_json = response.json()
-        return response_json['id']
+        return response_json["id"]
 
     def path(
         self, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
@@ -127,7 +127,7 @@ class ChannelReport(YoutubeAnalyticsStream):
         if not self.job_id:
             self.job_id = self.create_job(self.name)
             self.logger.info(f"YouTube reporting job is created: '{self.job_id}'")
-        return 'jobs/{}/reports'.format(self.job_id)
+        return "jobs/{}/reports".format(self.job_id)
 
 
 # Basic incremental stream
@@ -204,24 +204,24 @@ class SourceYoutubeAnalytics(AbstractSource):
 
     @staticmethod
     def get_authenticator(config):
-        client_id = config['client_id']
-        client_secret = config['client_secret']
-        refresh_token = config['refresh_token']
+        client_id = config["client_id"]
+        client_secret = config["client_secret"]
+        refresh_token = config["refresh_token"]
 
         return Oauth2Authenticator(
-            token_refresh_endpoint='https://oauth2.googleapis.com/token',
+            token_refresh_endpoint="https://oauth2.googleapis.com/token",
             client_id=client_id,
             client_secret=client_secret,
             refresh_token=refresh_token,
-            scopes=['https://www.googleapis.com/auth/yt-analytics-monetary.readonly'],
+            scopes=["https://www.googleapis.com/auth/yt-analytics-monetary.readonly"],
         )
 
     def get_jobs(self, authenticator):
         headers = authenticator.get_auth_header()
-        url = urljoin(YoutubeAnalyticsStream.url_base, 'jobs')
+        url = urljoin(YoutubeAnalyticsStream.url_base, "jobs")
         response = requests.get(url, headers=headers)
         response.raise_for_status()
-        return response.json().get('jobs', {})
+        return response.json().get("jobs", {})
 
     def check_connection(self, logger, config) -> Tuple[bool, any]:
         authenticator = self.get_authenticator(config)
@@ -236,14 +236,14 @@ class SourceYoutubeAnalytics(AbstractSource):
     def streams(self, config: Mapping[str, Any]) -> List[Stream]:
         authenticator = self.get_authenticator(config)
         jobs = self.get_jobs(authenticator)
-        report_to_job_id = {j['reportTypeId']: j['id'] for j in jobs}
+        report_to_job_id = {j["reportTypeId"]: j["id"] for j in jobs}
 
-        channel_reports = json.loads(pkgutil.get_data('source_youtube_analytics', 'defaults/channel_reports.json'))
+        channel_reports = json.loads(pkgutil.get_data("source_youtube_analytics", "defaults/channel_reports.json"))
 
         streams = []
         for channel_report in channel_reports:
-            stream_name = channel_report['id']
-            dimensions = channel_report['dimensions']
+            stream_name = channel_report["id"]
+            dimensions = channel_report["dimensions"]
             job_id = report_to_job_id.get(stream_name)
             streams.append(ChannelReport(stream_name, dimensions, job_id, authenticator))
         return streams
