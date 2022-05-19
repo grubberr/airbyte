@@ -59,7 +59,6 @@ class SourceAllTypes(Source):
             by their names and types)
         """
         streams = []
-
         stream_name = "TableName"
         json_schema = {
             "$schema": "http://json-schema.org/draft-07/schema#",
