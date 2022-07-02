@@ -96,3 +96,35 @@ def get_query_reviews(owner, name, first, after, number=None):
         is_site_admin="site_admin",
     )
     return str(op)
+
+
+def get_query_pull_request_review_comment_reactions(owner, name, first, after):
+    op = sgqlc.operation.Operation(_schema_root.query_type)
+    repository = op.repository(owner=owner, name=name)
+    repository.name()
+    repository.owner.login()
+
+    kwargs = {"first": first}
+    if after:
+        kwargs["after"] = after
+    pull_requests = repository.pull_requests(**kwargs)
+    pull_requests.page_info.__fields__(has_next_page=True, end_cursor=True)
+
+    reviews = pull_requests.nodes.reviews(first=10)
+    reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
+    comments = reviews.nodes.comments(first=10)
+    comments.page_info.__fields__(has_next_page=True, end_cursor=True)
+    comments.nodes.__fields__(database_id="id")
+    reactions = comments.nodes.reactions(first=10)
+    reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
+    user = reactions.nodes.user()
+    user.__fields__(
+        id="node_id",
+        database_id="id",
+        login=True,
+        avatar_url="avatar_url",
+        url="html_url",
+        is_site_admin="site_admin",
+    )
+    #op.rate_limit.__fields__(limit=True, cost=True, remaining=True, reset_at=True)
+    return str(op)

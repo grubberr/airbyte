@@ -13,7 +13,7 @@ from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.http import HttpStream
 from requests.exceptions import HTTPError
 
-from .graphql import get_query_pull_requests, get_query_reviews
+from .graphql import get_query_pull_request_review_comment_reactions, get_query_pull_requests, get_query_reviews
 from .utils import getter
 
 DEFAULT_PAGE_SIZE = 100
@@ -977,12 +977,64 @@ class IssueReactions(ReactionStream):
     copy_parent_key = "issue_number"
 
 
-class PullRequestCommentReactions(ReactionStream):
+class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
     """
-    API docs: https://docs.github.com/en/rest/reference/reactions#list-reactions-for-a-pull-request-review-comment
+    API docs:
+    https://docs.github.com/en/graphql/reference/objects#pullrequestreviewcomment
+    https://docs.github.com/en/graphql/reference/objects#reaction
     """
 
-    parent_entity = ReviewComments
+    http_method = "POST"
+    cursor_field = "created_at"
+
+    def path(
+        self, *, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
+    ) -> str:
+        return "graphql"
+
+    def raise_error_from_response(self, response_json):
+        if "errors" in response_json:
+            raise Exception(str(response_json["errors"]))
+
+    def _get_name(self, repository):
+        return repository["owner"]["login"] + "/" + repository["name"]
+
+    def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
+        self.raise_error_from_response(response_json=response.json())
+        repository = response.json()["data"]["repository"]
+        if repository:
+            for pull_request in repository["pullRequests"]["nodes"]:
+                for review in pull_request["reviews"]["nodes"]:
+                    for comment in review["comments"]["nodes"]:
+                        for record in comment["reactions"]["nodes"]:
+                            record["repository"] = self._get_name(repository)
+                            record["comment_id"] = comment["id"]
+                            record["user"]["type"] = "User"
+                            yield record
+
+    def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
+        repository = response.json()["data"]["repository"]
+        if repository:
+            pageInfo = repository["pullRequests"]["pageInfo"]
+            if pageInfo["hasNextPage"]:
+                return {"after": pageInfo["endCursor"]}
+
+    def request_params(
+        self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
+    ) -> MutableMapping[str, Any]:
+        return {}
+
+    def request_body_json(
+        self,
+        stream_state: Mapping[str, Any],
+        stream_slice: Mapping[str, Any] = None,
+        next_page_token: Mapping[str, Any] = None,
+    ) -> Optional[Mapping]:
+        organization, name = stream_slice["repository"].split("/")
+        if next_page_token:
+            next_page_token = next_page_token["after"]
+        query = get_query_pull_request_review_comment_reactions(owner=organization, name=name, first=self.page_size, after=next_page_token)
+        return {"query": query}
 
 
 class Deployments(SemiIncrementalMixin, GithubStream):
