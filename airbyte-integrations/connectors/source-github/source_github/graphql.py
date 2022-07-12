@@ -113,17 +113,17 @@ def get_query_pull_request_review_comment_reactions(owner, name, first, after=No
     pull_requests.page_info.__fields__(has_next_page=True, end_cursor=True)
     pull_requests.nodes.id(__alias__="node_id")
 
-    reviews = pull_requests.nodes.reviews(first=3)
+    reviews = pull_requests.nodes.reviews(first=5)
     reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
     reviews.nodes.id(__alias__="node_id")
     reviews.nodes.database_id(__alias__="id")
 
-    comments = reviews.nodes.comments(first=5)
+    comments = reviews.nodes.comments(first=2)
     comments.page_info.__fields__(has_next_page=True, end_cursor=True)
     comments.nodes.id(__alias__="node_id")
     comments.nodes.database_id(__alias__="id")
 
-    reactions = comments.nodes.reactions(first=10)
+    reactions = comments.nodes.reactions(first=2)
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
     user = reactions.nodes.user()
@@ -146,7 +146,7 @@ def get_query_review_comment_reactions(node_id, first, after):
     pull_request.repository.name()
     pull_request.repository.owner.login()
 
-    kwargs = {"first": 3}
+    kwargs = {"first": 5}
     if after:
         kwargs["after"] = after
 
@@ -155,12 +155,12 @@ def get_query_review_comment_reactions(node_id, first, after):
     reviews.nodes.id(__alias__="node_id")
     reviews.nodes.database_id(__alias__="id")
 
-    comments = reviews.nodes.comments(first=5)
+    comments = reviews.nodes.comments(first=2)
     comments.page_info.__fields__(has_next_page=True, end_cursor=True)
     comments.nodes.id(__alias__="node_id")
     comments.nodes.database_id(__alias__="id")
 
-    reactions = comments.nodes.reactions(first=10)
+    reactions = comments.nodes.reactions(first=2)
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
     user = reactions.nodes.user()
@@ -182,7 +182,7 @@ def get_query_comment_reactions(node_id, first, after):
     review.repository.name()
     review.repository.owner.login()
 
-    kwargs = {"first": 10}
+    kwargs = {"first": 2}
     if after:
         kwargs["after"] = after
 
@@ -191,7 +191,7 @@ def get_query_comment_reactions(node_id, first, after):
     comments.nodes.id(__alias__="node_id")
     comments.nodes.database_id(__alias__="id")
 
-    reactions = comments.nodes.reactions(first=10)
+    reactions = comments.nodes.reactions(first=2)
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
     user = reactions.nodes.user()
@@ -214,7 +214,7 @@ def get_query_reactions(node_id, first, after):
     comment.repository.name()
     comment.repository.owner.login()
 
-    kwargs = {"first": 100}
+    kwargs = {"first": 10}
     if after:
         kwargs["after"] = after
 
