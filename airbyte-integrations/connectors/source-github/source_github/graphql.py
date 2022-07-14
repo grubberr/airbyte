@@ -106,7 +106,7 @@ def get_query_pull_request_review_comment_reactions(owner, name, first, after=No
     repository.name()
     repository.owner.login()
 
-    kwargs = {"first": 100}
+    kwargs = {"first": first}
     if after:
         kwargs["after"] = after
     pull_requests = repository.pull_requests(**kwargs)
@@ -150,7 +150,7 @@ def get_query_review_comment_reactions(node_id, first, after):
     pull_request.repository.name()
     pull_request.repository.owner.login()
 
-    kwargs = {"first": 5}
+    kwargs = {"first": first}
     if after:
         kwargs["after"] = after
 
@@ -189,7 +189,7 @@ def get_query_comment_reactions(node_id, first, after):
     review.repository.name()
     review.repository.owner.login()
 
-    kwargs = {"first": 2}
+    kwargs = {"first": first}
     if after:
         kwargs["after"] = after
 
@@ -223,7 +223,7 @@ def get_query_reactions(node_id, first, after):
     comment.repository.name()
     comment.repository.owner.login()
 
-    kwargs = {"first": 10}
+    kwargs = {"first": first}
     if after:
         kwargs["after"] = after
 
@@ -251,12 +251,12 @@ class CursorStorage:
         self.count = itertools.count()
         self.storage = []
 
-    def add_cursor(self, typename, cursor, parent_id=None):
+    def add_cursor(self, typename, cursor, parent_id=None, total_count=None):
         priority = self.typename_to_prio[typename]
-        heapq.heappush(self.storage, (priority, next(self.count), (typename, cursor, parent_id)))
+        heapq.heappush(self.storage, (priority, next(self.count), (typename, cursor, parent_id, total_count)))
 
     def get_cursor(self):
         if self.storage:
             _, _, c = heapq.heappop(self.storage)
-            res = {"typename": c[0], "cursor": c[1], "parent_id": c[2]}
+            res = {"typename": c[0], "cursor": c[1], "parent_id": c[2], "total_count": c[3]}
             return res
