@@ -13,6 +13,17 @@ _schema = github_schema
 _schema_root = _schema.github_schema
 
 
+def select_user_fields(user):
+    user.__fields__(
+        id="node_id",
+        database_id="id",
+        login=True,
+        avatar_url="avatar_url",
+        url="html_url",
+        is_site_admin="site_admin",
+    )
+
+
 def get_query_pull_requests(owner, name, first, after, direction):
     kwargs = {"first": first, "order_by": {"field": "UPDATED_AT", "direction": direction}}
     if after:
@@ -43,14 +54,7 @@ def get_query_pull_requests(owner, name, first, after, direction):
     reviews.total_count()
     reviews.nodes.comments.__fields__(total_count=True)
     user = pull_requests.nodes.merged_by(__alias__="merged_by").__as__(_schema_root.User)
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
+    select_user_fields(user)
     pull_requests.page_info.__fields__(has_next_page=True, end_cursor=True)
     return str(op)
 
@@ -89,14 +93,7 @@ def get_query_reviews(owner, name, first, after, number=None):
     )
     reviews.nodes.commit.oid()
     user = reviews.nodes.author(__alias__="user").__as__(_schema_root.User)
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
+    select_user_fields(user)
     return str(op)
 
 
@@ -130,16 +127,7 @@ def get_query_pull_request_review_comment_reactions(owner, name, first, after=No
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.total_count()
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    user = reactions.nodes.user()
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
-    # op.rate_limit.__fields__(limit=True, cost=True, remaining=True, reset_at=True)
+    select_user_fields(reactions.nodes.user())
     return str(op)
 
 
@@ -170,15 +158,7 @@ def get_query_review_comment_reactions(node_id, first, after):
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.total_count()
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    user = reactions.nodes.user()
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
+    select_user_fields(reactions.nodes.user())
     return str(op)
 
 
@@ -203,15 +183,7 @@ def get_query_comment_reactions(node_id, first, after):
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.total_count()
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    user = reactions.nodes.user()
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
+    select_user_fields(reactions.nodes.user())
     return str(op)
 
 
@@ -231,15 +203,7 @@ def get_query_reactions(node_id, first, after):
     reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
     reactions.total_count()
     reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    user = reactions.nodes.user()
-    user.__fields__(
-        id="node_id",
-        database_id="id",
-        login=True,
-        avatar_url="avatar_url",
-        url="html_url",
-        is_site_admin="site_admin",
-    )
+    select_user_fields(reactions.nodes.user())
     return str(op)
 
 
