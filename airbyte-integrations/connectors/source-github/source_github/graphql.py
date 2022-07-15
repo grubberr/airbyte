@@ -98,6 +98,11 @@ def get_query_reviews(owner, name, first, after, number=None):
 
 
 class QueryReactions:
+
+    AVERAGE_REVIEWS = 5
+    AVERAGE_COMMENTS = 2
+    AVERAGE_REACTIONS = 2
+
     def get_query_root_repository(self, owner, name, first, after=None):
         op = sgqlc.operation.Operation(_schema_root.query_type)
         repository = op.repository(owner=owner, name=name)
@@ -112,9 +117,9 @@ class QueryReactions:
         pull_requests.total_count()
         pull_requests.nodes.id(__alias__="node_id")
 
-        reviews = self._select_reviews(pull_requests.nodes, first=5)
-        comments = self._select_comments(reviews.nodes, first=2)
-        self._select_reactions(comments.nodes, first=2)
+        reviews = self._select_reviews(pull_requests.nodes, first=self.AVERAGE_REVIEWS)
+        comments = self._select_comments(reviews.nodes, first=self.AVERAGE_COMMENTS)
+        self._select_reactions(comments.nodes, first=self.AVERAGE_REACTIONS)
         return str(op)
 
     def get_query_root_pull_request(self, node_id, first, after):
@@ -125,8 +130,8 @@ class QueryReactions:
         pull_request.repository.owner.login()
 
         reviews = self._select_reviews(pull_request, first, after)
-        comments = self._select_comments(reviews.nodes, first=2)
-        self._select_reactions(comments.nodes, first=2)
+        comments = self._select_comments(reviews.nodes, first=self.AVERAGE_COMMENTS)
+        self._select_reactions(comments.nodes, first=self.AVERAGE_REACTIONS)
         return str(op)
 
     def get_query_root_review(self, node_id, first, after):
@@ -137,7 +142,7 @@ class QueryReactions:
         review.repository.owner.login()
 
         comments = self._select_comments(review, first, after)
-        self._select_reactions(comments.nodes, first=2)
+        self._select_reactions(comments.nodes, first=self.AVERAGE_REACTIONS)
         return str(op)
 
     def get_query_root_comment(self, node_id, first, after):
