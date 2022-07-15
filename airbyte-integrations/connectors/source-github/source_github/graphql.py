@@ -112,12 +112,7 @@ class QueryReactions:
         pull_requests.total_count()
         pull_requests.nodes.id(__alias__="node_id")
 
-        reviews = pull_requests.nodes.reviews(first=5)
-        reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
-        reviews.total_count()
-        reviews.nodes.id(__alias__="node_id")
-        reviews.nodes.database_id(__alias__="id")
-
+        reviews = self._select_reviews(pull_requests.nodes, first=5)
         comments = self._select_comments(reviews.nodes, first=2)
         self._select_reactions(comments.nodes, first=2)
         return str(op)
@@ -129,16 +124,7 @@ class QueryReactions:
         pull_request.repository.name()
         pull_request.repository.owner.login()
 
-        kwargs = {"first": first}
-        if after:
-            kwargs["after"] = after
-
-        reviews = pull_request.reviews(**kwargs)
-        reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
-        reviews.total_count()
-        reviews.nodes.id(__alias__="node_id")
-        reviews.nodes.database_id(__alias__="id")
-
+        reviews = self._select_reviews(pull_request, first, after)
         comments = self._select_comments(reviews.nodes, first=2)
         self._select_reactions(comments.nodes, first=2)
         return str(op)
@@ -185,6 +171,17 @@ class QueryReactions:
         comments.nodes.id(__alias__="node_id")
         comments.nodes.database_id(__alias__="id")
         return comments
+
+    def _select_reviews(self, pull_request, first, after=None):
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
+        reviews = pull_request.reviews(**kwargs)
+        reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reviews.total_count()
+        reviews.nodes.id(__alias__="node_id")
+        reviews.nodes.database_id(__alias__="id")
+        return reviews
 
 
 class CursorStorage:
