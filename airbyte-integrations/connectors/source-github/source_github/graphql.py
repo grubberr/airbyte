@@ -97,114 +97,112 @@ def get_query_reviews(owner, name, first, after, number=None):
     return str(op)
 
 
-def get_query_pull_request_review_comment_reactions(owner, name, first, after=None):
-    op = sgqlc.operation.Operation(_schema_root.query_type)
-    repository = op.repository(owner=owner, name=name)
-    repository.name()
-    repository.owner.login()
+class QueryReactions:
+    def get_query_root_repository(self, owner, name, first, after=None):
+        op = sgqlc.operation.Operation(_schema_root.query_type)
+        repository = op.repository(owner=owner, name=name)
+        repository.name()
+        repository.owner.login()
 
-    kwargs = {"first": first}
-    if after:
-        kwargs["after"] = after
-    pull_requests = repository.pull_requests(**kwargs)
-    pull_requests.page_info.__fields__(has_next_page=True, end_cursor=True)
-    pull_requests.total_count()
-    pull_requests.nodes.id(__alias__="node_id")
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
+        pull_requests = repository.pull_requests(**kwargs)
+        pull_requests.page_info.__fields__(has_next_page=True, end_cursor=True)
+        pull_requests.total_count()
+        pull_requests.nodes.id(__alias__="node_id")
 
-    reviews = pull_requests.nodes.reviews(first=5)
-    reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reviews.total_count()
-    reviews.nodes.id(__alias__="node_id")
-    reviews.nodes.database_id(__alias__="id")
+        reviews = pull_requests.nodes.reviews(first=5)
+        reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reviews.total_count()
+        reviews.nodes.id(__alias__="node_id")
+        reviews.nodes.database_id(__alias__="id")
 
-    comments = reviews.nodes.comments(first=2)
-    comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-    comments.total_count()
-    comments.nodes.id(__alias__="node_id")
-    comments.nodes.database_id(__alias__="id")
+        comments = reviews.nodes.comments(first=2)
+        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
+        comments.total_count()
+        comments.nodes.id(__alias__="node_id")
+        comments.nodes.database_id(__alias__="id")
 
-    reactions = comments.nodes.reactions(first=2)
-    reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reactions.total_count()
-    reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    select_user_fields(reactions.nodes.user())
-    return str(op)
+        reactions = comments.nodes.reactions(first=2)
+        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reactions.total_count()
+        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
+        select_user_fields(reactions.nodes.user())
+        return str(op)
 
+    def get_query_root_pull_request(self, node_id, first, after):
+        op = sgqlc.operation.Operation(_schema_root.query_type)
+        pull_request = op.node(id=node_id).__as__(_schema_root.PullRequest)
+        pull_request.id(__alias__="node_id")
+        pull_request.repository.name()
+        pull_request.repository.owner.login()
 
-def get_query_review_comment_reactions(node_id, first, after):
-    op = sgqlc.operation.Operation(_schema_root.query_type)
-    pull_request = op.node(id=node_id).__as__(_schema_root.PullRequest)
-    pull_request.id(__alias__="node_id")
-    pull_request.repository.name()
-    pull_request.repository.owner.login()
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
 
-    kwargs = {"first": first}
-    if after:
-        kwargs["after"] = after
+        reviews = pull_request.reviews(**kwargs)
+        reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reviews.total_count()
+        reviews.nodes.id(__alias__="node_id")
+        reviews.nodes.database_id(__alias__="id")
 
-    reviews = pull_request.reviews(**kwargs)
-    reviews.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reviews.total_count()
-    reviews.nodes.id(__alias__="node_id")
-    reviews.nodes.database_id(__alias__="id")
+        comments = reviews.nodes.comments(first=2)
+        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
+        comments.total_count()
+        comments.nodes.id(__alias__="node_id")
+        comments.nodes.database_id(__alias__="id")
 
-    comments = reviews.nodes.comments(first=2)
-    comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-    comments.total_count()
-    comments.nodes.id(__alias__="node_id")
-    comments.nodes.database_id(__alias__="id")
+        reactions = comments.nodes.reactions(first=2)
+        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reactions.total_count()
+        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
+        select_user_fields(reactions.nodes.user())
+        return str(op)
 
-    reactions = comments.nodes.reactions(first=2)
-    reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reactions.total_count()
-    reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    select_user_fields(reactions.nodes.user())
-    return str(op)
+    def get_query_root_review(self, node_id, first, after):
+        op = sgqlc.operation.Operation(_schema_root.query_type)
+        review = op.node(id=node_id).__as__(_schema_root.PullRequestReview)
+        review.id(__alias__="node_id")
+        review.repository.name()
+        review.repository.owner.login()
 
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
 
-def get_query_comment_reactions(node_id, first, after):
-    op = sgqlc.operation.Operation(_schema_root.query_type)
-    review = op.node(id=node_id).__as__(_schema_root.PullRequestReview)
-    review.id(__alias__="node_id")
-    review.repository.name()
-    review.repository.owner.login()
+        comments = review.comments(**kwargs)
+        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
+        comments.total_count()
+        comments.nodes.id(__alias__="node_id")
+        comments.nodes.database_id(__alias__="id")
 
-    kwargs = {"first": first}
-    if after:
-        kwargs["after"] = after
+        reactions = comments.nodes.reactions(first=2)
+        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reactions.total_count()
+        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
+        select_user_fields(reactions.nodes.user())
+        return str(op)
 
-    comments = review.comments(**kwargs)
-    comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-    comments.total_count()
-    comments.nodes.id(__alias__="node_id")
-    comments.nodes.database_id(__alias__="id")
+    def get_query_root_comment(self, node_id, first, after):
+        op = sgqlc.operation.Operation(_schema_root.query_type)
+        comment = op.node(id=node_id).__as__(_schema_root.PullRequestReviewComment)
+        comment.id(__alias__="node_id")
+        comment.database_id(__alias__="id")
+        comment.repository.name()
+        comment.repository.owner.login()
 
-    reactions = comments.nodes.reactions(first=2)
-    reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reactions.total_count()
-    reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    select_user_fields(reactions.nodes.user())
-    return str(op)
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
 
-
-def get_query_reactions(node_id, first, after):
-    op = sgqlc.operation.Operation(_schema_root.query_type)
-    comment = op.node(id=node_id).__as__(_schema_root.PullRequestReviewComment)
-    comment.id(__alias__="node_id")
-    comment.database_id(__alias__="id")
-    comment.repository.name()
-    comment.repository.owner.login()
-
-    kwargs = {"first": first}
-    if after:
-        kwargs["after"] = after
-
-    reactions = comment.reactions(**kwargs)
-    reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-    reactions.total_count()
-    reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-    select_user_fields(reactions.nodes.user())
-    return str(op)
+        reactions = comment.reactions(**kwargs)
+        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
+        reactions.total_count()
+        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
+        select_user_fields(reactions.nodes.user())
+        return str(op)
 
 
 class CursorStorage:

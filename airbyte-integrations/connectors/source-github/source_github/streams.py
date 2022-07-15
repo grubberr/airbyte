@@ -13,15 +13,7 @@ from airbyte_cdk.models import SyncMode
 from airbyte_cdk.sources.streams.http import HttpStream
 from requests.exceptions import HTTPError
 
-from .graphql import (
-    CursorStorage,
-    get_query_comment_reactions,
-    get_query_pull_request_review_comment_reactions,
-    get_query_pull_requests,
-    get_query_reactions,
-    get_query_review_comment_reactions,
-    get_query_reviews,
-)
+from .graphql import CursorStorage, QueryReactions, get_query_pull_requests, get_query_reviews
 from .utils import getter
 
 DEFAULT_PAGE_SIZE = 100
@@ -1009,6 +1001,7 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.cursor_storage = CursorStorage()
+        self.query_reactions = QueryReactions()
 
     def path(
         self, *, stream_state: Mapping[str, Any] = None, stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
@@ -1076,17 +1069,32 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
             for pull_request in repository["pullRequests"]["nodes"]:
                 pageInfo = pull_request["reviews"]["pageInfo"]
                 if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor("PullRequestReview", pageInfo["endCursor"], parent_id=pull_request["node_id"], total_count=pull_request["reviews"]["totalCount"])
+                    self.cursor_storage.add_cursor(
+                        "PullRequestReview",
+                        pageInfo["endCursor"],
+                        parent_id=pull_request["node_id"],
+                        total_count=pull_request["reviews"]["totalCount"],
+                    )
 
                 for review in pull_request["reviews"]["nodes"]:
                     pageInfo = review["comments"]["pageInfo"]
                     if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor("PullRequestReviewComment", pageInfo["endCursor"], parent_id=review["node_id"], total_count=review["comments"]["totalCount"])
+                        self.cursor_storage.add_cursor(
+                            "PullRequestReviewComment",
+                            pageInfo["endCursor"],
+                            parent_id=review["node_id"],
+                            total_count=review["comments"]["totalCount"],
+                        )
 
                     for comment in review["comments"]["nodes"]:
                         pageInfo = comment["reactions"]["pageInfo"]
                         if pageInfo["hasNextPage"]:
-                            self.cursor_storage.add_cursor("Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"])
+                            self.cursor_storage.add_cursor(
+                                "Reaction",
+                                pageInfo["endCursor"],
+                                parent_id=comment["node_id"],
+                                total_count=comment["reactions"]["totalCount"],
+                            )
 
         node = data.get("node")
         if node:
@@ -1094,34 +1102,58 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
                 pull_request = node
                 pageInfo = node["reviews"]["pageInfo"]
                 if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor("PullRequestReview", pageInfo["endCursor"], parent_id=pull_request["node_id"], total_count=pull_request["reviews"]["totalCount"])
+                    self.cursor_storage.add_cursor(
+                        "PullRequestReview",
+                        pageInfo["endCursor"],
+                        parent_id=pull_request["node_id"],
+                        total_count=pull_request["reviews"]["totalCount"],
+                    )
 
                 for review in pull_request["reviews"]["nodes"]:
                     pageInfo = review["comments"]["pageInfo"]
                     if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor("PullRequestReviewComment", pageInfo["endCursor"], parent_id=review["node_id"], total_count=review["comments"]["totalCount"])
+                        self.cursor_storage.add_cursor(
+                            "PullRequestReviewComment",
+                            pageInfo["endCursor"],
+                            parent_id=review["node_id"],
+                            total_count=review["comments"]["totalCount"],
+                        )
 
                     for comment in review["comments"]["nodes"]:
                         pageInfo = comment["reactions"]["pageInfo"]
                         if pageInfo["hasNextPage"]:
-                            self.cursor_storage.add_cursor("Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"])
+                            self.cursor_storage.add_cursor(
+                                "Reaction",
+                                pageInfo["endCursor"],
+                                parent_id=comment["node_id"],
+                                total_count=comment["reactions"]["totalCount"],
+                            )
 
             elif node["__typename"] == "PullRequestReview":
                 review = node
                 pageInfo = node["comments"]["pageInfo"]
                 if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor("PullRequestReviewComment", pageInfo["endCursor"], parent_id=review["node_id"], total_count=review["comments"]["totalCount"])
+                    self.cursor_storage.add_cursor(
+                        "PullRequestReviewComment",
+                        pageInfo["endCursor"],
+                        parent_id=review["node_id"],
+                        total_count=review["comments"]["totalCount"],
+                    )
 
                 for comment in review["comments"]["nodes"]:
                     pageInfo = comment["reactions"]["pageInfo"]
                     if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor("Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"])
+                        self.cursor_storage.add_cursor(
+                            "Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"]
+                        )
 
             elif node["__typename"] == "PullRequestReviewComment":
                 comment = node
                 pageInfo = node["reactions"]["pageInfo"]
                 if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor("Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"])
+                    self.cursor_storage.add_cursor(
+                        "Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"]
+                    )
 
         return self.cursor_storage.get_cursor()
 
@@ -1141,15 +1173,15 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
             after = next_page_token["cursor"]
             page_size = min(self.page_size, next_page_token["total_count"])
             if next_page_token["typename"] == "PullRequest":
-                query = get_query_pull_request_review_comment_reactions(owner=organization, name=name, first=page_size, after=after)
+                query = self.query_reactions.get_query_root_repository(owner=organization, name=name, first=page_size, after=after)
             elif next_page_token["typename"] == "PullRequestReview":
-                query = get_query_review_comment_reactions(node_id=next_page_token["parent_id"], first=page_size, after=after)
+                query = self.query_reactions.get_query_root_pull_request(node_id=next_page_token["parent_id"], first=page_size, after=after)
             elif next_page_token["typename"] == "PullRequestReviewComment":
-                query = get_query_comment_reactions(node_id=next_page_token["parent_id"], first=page_size, after=after)
+                query = self.query_reactions.get_query_root_review(node_id=next_page_token["parent_id"], first=page_size, after=after)
             elif next_page_token["typename"] == "Reaction":
-                query = get_query_reactions(node_id=next_page_token["parent_id"], first=page_size, after=after)
+                query = self.query_reactions.get_query_root_comment(node_id=next_page_token["parent_id"], first=page_size, after=after)
         else:
-            query = get_query_pull_request_review_comment_reactions(owner=organization, name=name, first=self.page_size)
+            query = self.query_reactions.get_query_root_repository(owner=organization, name=name, first=self.page_size)
 
         return {"query": query}
 
