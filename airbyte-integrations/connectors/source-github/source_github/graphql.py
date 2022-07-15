@@ -118,12 +118,7 @@ class QueryReactions:
         reviews.nodes.id(__alias__="node_id")
         reviews.nodes.database_id(__alias__="id")
 
-        comments = reviews.nodes.comments(first=2)
-        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-        comments.total_count()
-        comments.nodes.id(__alias__="node_id")
-        comments.nodes.database_id(__alias__="id")
-
+        comments = self._select_comments(reviews.nodes, first=2)
         self._select_reactions(comments.nodes, first=2)
         return str(op)
 
@@ -144,12 +139,7 @@ class QueryReactions:
         reviews.nodes.id(__alias__="node_id")
         reviews.nodes.database_id(__alias__="id")
 
-        comments = reviews.nodes.comments(first=2)
-        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-        comments.total_count()
-        comments.nodes.id(__alias__="node_id")
-        comments.nodes.database_id(__alias__="id")
-
+        comments = self._select_comments(reviews.nodes, first=2)
         self._select_reactions(comments.nodes, first=2)
         return str(op)
 
@@ -160,16 +150,7 @@ class QueryReactions:
         review.repository.name()
         review.repository.owner.login()
 
-        kwargs = {"first": first}
-        if after:
-            kwargs["after"] = after
-
-        comments = review.comments(**kwargs)
-        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
-        comments.total_count()
-        comments.nodes.id(__alias__="node_id")
-        comments.nodes.database_id(__alias__="id")
-
+        comments = self._select_comments(review, first, after)
         self._select_reactions(comments.nodes, first=2)
         return str(op)
 
@@ -193,6 +174,17 @@ class QueryReactions:
         reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
         select_user_fields(reactions.nodes.user())
         return reactions
+
+    def _select_comments(self, review, first, after=None):
+        kwargs = {"first": first}
+        if after:
+            kwargs["after"] = after
+        comments = review.comments(**kwargs)
+        comments.page_info.__fields__(has_next_page=True, end_cursor=True)
+        comments.total_count()
+        comments.nodes.id(__alias__="node_id")
+        comments.nodes.database_id(__alias__="id")
+        return comments
 
 
 class CursorStorage:
