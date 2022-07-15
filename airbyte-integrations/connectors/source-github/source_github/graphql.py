@@ -124,11 +124,7 @@ class QueryReactions:
         comments.nodes.id(__alias__="node_id")
         comments.nodes.database_id(__alias__="id")
 
-        reactions = comments.nodes.reactions(first=2)
-        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-        reactions.total_count()
-        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-        select_user_fields(reactions.nodes.user())
+        self._select_reactions(comments.nodes, first=2)
         return str(op)
 
     def get_query_root_pull_request(self, node_id, first, after):
@@ -154,11 +150,7 @@ class QueryReactions:
         comments.nodes.id(__alias__="node_id")
         comments.nodes.database_id(__alias__="id")
 
-        reactions = comments.nodes.reactions(first=2)
-        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-        reactions.total_count()
-        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-        select_user_fields(reactions.nodes.user())
+        self._select_reactions(comments.nodes, first=2)
         return str(op)
 
     def get_query_root_review(self, node_id, first, after):
@@ -178,11 +170,7 @@ class QueryReactions:
         comments.nodes.id(__alias__="node_id")
         comments.nodes.database_id(__alias__="id")
 
-        reactions = comments.nodes.reactions(first=2)
-        reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
-        reactions.total_count()
-        reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
-        select_user_fields(reactions.nodes.user())
+        self._select_reactions(comments.nodes, first=2)
         return str(op)
 
     def get_query_root_comment(self, node_id, first, after):
@@ -192,17 +180,19 @@ class QueryReactions:
         comment.database_id(__alias__="id")
         comment.repository.name()
         comment.repository.owner.login()
+        self._select_reactions(comment, first, after)
+        return str(op)
 
+    def _select_reactions(self, comment, first, after=None):
         kwargs = {"first": first}
         if after:
             kwargs["after"] = after
-
         reactions = comment.reactions(**kwargs)
         reactions.page_info.__fields__(has_next_page=True, end_cursor=True)
         reactions.total_count()
         reactions.nodes.__fields__(id="node_id", database_id="id", content=True, created_at="created_at")
         select_user_fields(reactions.nodes.user())
-        return str(op)
+        return reactions
 
 
 class CursorStorage:
