@@ -1015,48 +1015,40 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
     def _get_name(self, repository):
         return repository["owner"]["login"] + "/" + repository["name"]
 
+    def _get_reactions_from_comment(self, comment, repository):
+        for reaction in comment["reactions"]["nodes"]:
+            reaction["repository"] = self._get_name(repository)
+            reaction["comment_id"] = comment["id"]
+            reaction["user"]["type"] = "User"
+            yield reaction
+
+    def _get_reactions_from_review(self, review, repository):
+        for comment in review["comments"]["nodes"]:
+            yield from self._get_reactions_from_comment(comment, repository)
+
+    def _get_reactions_from_pull_request(self, pull_request, repository):
+        for review in pull_request["reviews"]["nodes"]:
+            yield from self._get_reactions_from_review(review, repository)
+
+    def _get_reactions_from_repository(self, repository):
+        for pull_request in repository["pullRequests"]["nodes"]:
+            yield from self._get_reactions_from_pull_request(pull_request, repository)
+
     def parse_response(self, response: requests.Response, **kwargs) -> Iterable[Mapping]:
         self.raise_error_from_response(response_json=response.json())
         data = response.json()["data"]
         repository = data.get("repository")
         if repository:
-            for pull_request in repository["pullRequests"]["nodes"]:
-                for review in pull_request["reviews"]["nodes"]:
-                    for comment in review["comments"]["nodes"]:
-                        for record in comment["reactions"]["nodes"]:
-                            record["repository"] = self._get_name(repository)
-                            record["comment_id"] = comment["id"]
-                            record["user"]["type"] = "User"
-                            yield record
+            yield from self._get_reactions_from_repository(repository)
 
         node = data.get("node")
         if node:
             if node["__typename"] == "PullRequest":
-                repository = node["repository"]
-                for review in node["reviews"]["nodes"]:
-                    for comment in review["comments"]["nodes"]:
-                        for record in comment["reactions"]["nodes"]:
-                            record["repository"] = self._get_name(repository)
-                            record["comment_id"] = comment["id"]
-                            record["user"]["type"] = "User"
-                            yield record
-
+                yield from self._get_reactions_from_pull_request(node, node["repository"])
             elif node["__typename"] == "PullRequestReview":
-                repository = node["repository"]
-                for comment in node["comments"]["nodes"]:
-                    for record in comment["reactions"]["nodes"]:
-                        record["repository"] = self._get_name(repository)
-                        record["comment_id"] = comment["id"]
-                        record["user"]["type"] = "User"
-                        yield record
-
+                yield from self._get_reactions_from_review(node, node["repository"])
             elif node["__typename"] == "PullRequestReviewComment":
-                repository = node["repository"]
-                for record in node["reactions"]["nodes"]:
-                    record["repository"] = self._get_name(repository)
-                    record["comment_id"] = node["id"]
-                    record["user"]["type"] = "User"
-                    yield record
+                yield from self._get_reactions_from_comment(node, node["repository"])
 
     def next_page_token(self, response: requests.Response) -> Optional[Mapping[str, Any]]:
         data = response.json()["data"]
