@@ -1054,100 +1054,44 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
         data = response.json()["data"]
         repository = data.get("repository")
         if repository:
-            pageInfo = repository["pullRequests"]["pageInfo"]
-            if pageInfo["hasNextPage"]:
-                self.cursor_storage.add_cursor("PullRequest", pageInfo["endCursor"], total_count=repository["pullRequests"]["totalCount"])
-
+            self._add_cursor(repository, "pullRequests")
             for pull_request in repository["pullRequests"]["nodes"]:
-                pageInfo = pull_request["reviews"]["pageInfo"]
-                if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor(
-                        "PullRequestReview",
-                        pageInfo["endCursor"],
-                        parent_id=pull_request["node_id"],
-                        total_count=pull_request["reviews"]["totalCount"],
-                    )
-
+                self._add_cursor(pull_request, "reviews")
                 for review in pull_request["reviews"]["nodes"]:
-                    pageInfo = review["comments"]["pageInfo"]
-                    if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor(
-                            "PullRequestReviewComment",
-                            pageInfo["endCursor"],
-                            parent_id=review["node_id"],
-                            total_count=review["comments"]["totalCount"],
-                        )
-
+                    self._add_cursor(review, "comments")
                     for comment in review["comments"]["nodes"]:
-                        pageInfo = comment["reactions"]["pageInfo"]
-                        if pageInfo["hasNextPage"]:
-                            self.cursor_storage.add_cursor(
-                                "Reaction",
-                                pageInfo["endCursor"],
-                                parent_id=comment["node_id"],
-                                total_count=comment["reactions"]["totalCount"],
-                            )
+                        self._add_cursor(comment, "reactions")
 
         node = data.get("node")
         if node:
             if node["__typename"] == "PullRequest":
-                pull_request = node
-                pageInfo = node["reviews"]["pageInfo"]
-                if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor(
-                        "PullRequestReview",
-                        pageInfo["endCursor"],
-                        parent_id=pull_request["node_id"],
-                        total_count=pull_request["reviews"]["totalCount"],
-                    )
-
-                for review in pull_request["reviews"]["nodes"]:
-                    pageInfo = review["comments"]["pageInfo"]
-                    if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor(
-                            "PullRequestReviewComment",
-                            pageInfo["endCursor"],
-                            parent_id=review["node_id"],
-                            total_count=review["comments"]["totalCount"],
-                        )
-
+                self._add_cursor(node, "reviews")
+                for review in node["reviews"]["nodes"]:
+                    self._add_cursor(review, "comments")
                     for comment in review["comments"]["nodes"]:
-                        pageInfo = comment["reactions"]["pageInfo"]
-                        if pageInfo["hasNextPage"]:
-                            self.cursor_storage.add_cursor(
-                                "Reaction",
-                                pageInfo["endCursor"],
-                                parent_id=comment["node_id"],
-                                total_count=comment["reactions"]["totalCount"],
-                            )
-
+                        self._add_cursor(comment, "reactions")
             elif node["__typename"] == "PullRequestReview":
-                review = node
-                pageInfo = node["comments"]["pageInfo"]
-                if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor(
-                        "PullRequestReviewComment",
-                        pageInfo["endCursor"],
-                        parent_id=review["node_id"],
-                        total_count=review["comments"]["totalCount"],
-                    )
-
-                for comment in review["comments"]["nodes"]:
-                    pageInfo = comment["reactions"]["pageInfo"]
-                    if pageInfo["hasNextPage"]:
-                        self.cursor_storage.add_cursor(
-                            "Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"]
-                        )
-
+                self._add_cursor(node, "comments")
+                for comment in node["comments"]["nodes"]:
+                    self._add_cursor(comment, "reactions")
             elif node["__typename"] == "PullRequestReviewComment":
-                comment = node
-                pageInfo = node["reactions"]["pageInfo"]
-                if pageInfo["hasNextPage"]:
-                    self.cursor_storage.add_cursor(
-                        "Reaction", pageInfo["endCursor"], parent_id=comment["node_id"], total_count=comment["reactions"]["totalCount"]
-                    )
+                self._add_cursor(node, "reactions")
 
         return self.cursor_storage.get_cursor()
+
+    def _add_cursor(self, node, link):
+        link_to_object = {
+            "reactions": "Reaction",
+            "comments": "PullRequestReviewComment",
+            "reviews": "PullRequestReview",
+            "pullRequests": "PullRequest",
+        }
+
+        pageInfo = node[link]["pageInfo"]
+        if pageInfo["hasNextPage"]:
+            self.cursor_storage.add_cursor(
+                link_to_object[link], pageInfo["endCursor"], parent_id=node.get("node_id"), total_count=node[link]["totalCount"]
+            )
 
     def request_params(
         self, stream_state: Mapping[str, Any], stream_slice: Mapping[str, Any] = None, next_page_token: Mapping[str, Any] = None
