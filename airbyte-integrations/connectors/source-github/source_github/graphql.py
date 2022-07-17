@@ -197,12 +197,11 @@ class CursorStorage:
         self.count = itertools.count()
         self.storage = []
 
-    def add_cursor(self, typename, cursor, parent_id=None, total_count=None):
+    def add_cursor(self, typename, cursor, total_count, parent_id=None):
         priority = self.typename_to_prio[typename]
-        heapq.heappush(self.storage, (priority, next(self.count), (typename, cursor, parent_id, total_count)))
+        heapq.heappush(self.storage, (priority, next(self.count), (typename, cursor, total_count, parent_id)))
 
     def get_cursor(self):
         if self.storage:
             _, _, c = heapq.heappop(self.storage)
-            res = {"typename": c[0], "cursor": c[1], "parent_id": c[2], "total_count": c[3]}
-            return res
+            return {"typename": c[0], "cursor": c[1], "total_count": c[2], "parent_id": c[3]}

@@ -1090,7 +1090,7 @@ class PullRequestCommentReactions(SemiIncrementalMixin, GithubStream):
         pageInfo = node[link]["pageInfo"]
         if pageInfo["hasNextPage"]:
             self.cursor_storage.add_cursor(
-                link_to_object[link], pageInfo["endCursor"], parent_id=node.get("node_id"), total_count=node[link]["totalCount"]
+                link_to_object[link], pageInfo["endCursor"], node[link]["totalCount"], parent_id=node.get("node_id")
             )
 
     def request_params(
