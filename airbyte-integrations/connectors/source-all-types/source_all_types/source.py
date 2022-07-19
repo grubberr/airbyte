@@ -109,6 +109,13 @@ class SourceAllTypes(Source):
                         "datetime_2": {"type": "string", "format": "date-time", "airbyte_type": "timestamp_without_timezone"},
                     },
                 },
+                "custom_fields": {
+                    "type": ["null", "array"],
+                    "items": {
+                        "type": ["null", "object"],
+                        "properties": {"id": {"type": ["null", "integer"]}, "value": {"type": ["null", "string"]}},
+                    },
+                },
             },
         }
 
@@ -172,6 +179,12 @@ class SourceAllTypes(Source):
                 "datetime_1": "2022-11-22T01:23:45",
                 "datetime_2": "2022-11-22T01:23:45.9999999",
             },
+            "custom_fields": [
+                {"id": 360023382300, "value": None},
+                {"id": 360004841380, "value": "customer_tickets"},
+                {"id": 360022469240, "value": "5"},
+                {"id": 360023712840, "value": False},
+            ],
         }
 
         yield AirbyteMessage(
